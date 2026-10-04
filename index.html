@@ -28,29 +28,36 @@
   }
 
   main {
+    position: relative;
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     align-items: center;      /* centrado vertical */
     justify-content: center;  /* centrado horizontal */
-    padding: env(safe-area-inset-top, 0px) 4vw env(safe-area-inset-bottom, 0px);
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
     overflow: hidden;
   }
 
   h1 {
     margin: 0;
-    width: 100%;
     text-align: center;
+    white-space: nowrap;
     font-family: "Cinzel", Georgia, "Times New Roman", serif;
     font-weight: 500;
     letter-spacing: 0.06em;
     line-height: 1.1;
     color: var(--ink);
-    font-size: 8vw; /* valor de respaldo; el script lo ajusta al ancho exacto */
+    font-size: 8vw; /* respaldo; el script lo ajusta al ancho exacto */
   }
 
-  main { position: relative; }
+  h1 span { display: inline-block; white-space: nowrap; }
+
+  /* Móvil: una palabra debajo de la otra */
+  @media (max-width: 700px) {
+    h1 { font-size: 12vw; }
+    h1 span { display: block; width: max-content; margin: 0 auto; }
+  }
 
   /* Pie de página: centrado, abajo del todo */
   footer {
@@ -70,22 +77,10 @@
     font-style: italic;
     font-weight: 500;
     font-size: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
-    color: var(--ink);              /* negro (claro en modo oscuro para que se vea) */
+    color: var(--ink);
     text-decoration: underline;
     text-underline-offset: 0.2em;
     text-decoration-thickness: 1px;
-  }
-
-  h1 span { display: inline-block; white-space: nowrap; }
-
-  /* Escritorio: en una sola línea */
-  h1 span + span { margin-left: 0.3em; }
-
-  /* Móvil: una palabra debajo de la otra */
-  @media (max-width: 700px) {
-    h1 { font-size: 15vw; }
-    h1 span { display: block; }
-    h1 span + span { margin-left: 0; }
   }
 </style>
 </head>
@@ -96,37 +91,51 @@
   </main>
 
   <script>
-    // Ajusta el tamaño de letra para que el texto ocupe todo el ancho disponible.
+    // Ajusta el tamaño de letra al ancho de pantalla midiendo el texto ya dibujado.
     (function () {
+      var ANCHO_MOVIL = 0.80;       // 80 % del ancho en móvil
+      var ANCHO_ESCRITORIO = 0.90;  // 90 % del ancho en pantallas grandes
+
       var h1 = document.getElementById('nombre');
       var spans = h1.querySelectorAll('span');
 
-      function fit() {
-        var available = document.documentElement.clientWidth * 0.90;
-        var test = 100; // tamaño de prueba en px
-        h1.style.fontSize = test + 'px';
-
-        var widest = 0;
+      function anchoTexto() {
+        var a = spans[0].getBoundingClientRect();
+        var b = spans[1].getBoundingClientRect();
         if (getComputedStyle(spans[0]).display === 'block') {
-          // móvil: la línea más ancha manda
-          spans.forEach(function (s) { widest = Math.max(widest, s.getBoundingClientRect().width); });
-        } else {
-          // escritorio: ancho de las dos palabras juntas
-          widest = spans[0].getBoundingClientRect().width +
-                   spans[1].getBoundingClientRect().width + test * 0.3;
+          return Math.max(a.width, b.width);   // móvil: la línea más ancha
         }
-        h1.style.fontSize = (test * available / widest) + 'px';
+        return b.right - a.left;               // escritorio: toda la línea
+      }
+
+      function fit() {
+        var movil = getComputedStyle(spans[0]).display === 'block';
+        var objetivo = document.documentElement.clientWidth * (movil ? ANCHO_MOVIL : ANCHO_ESCRITORIO);
+        var size = 100;
+        for (var i = 0; i < 4; i++) {
+          h1.style.fontSize = size + 'px';
+          var w = anchoTexto();
+          if (!w) return;
+          var nuevo = size * objetivo / w;
+          var parar = Math.abs(nuevo - size) < 0.5;
+          size = nuevo;
+          if (parar) break;
+        }
+        h1.style.fontSize = size + 'px';
       }
 
       window.addEventListener('resize', fit);
       window.addEventListener('orientationchange', fit);
       window.addEventListener('load', fit);
+      document.addEventListener('DOMContentLoaded', fit);
       if (document.fonts) {
-        // Medir de nuevo en cuanto Cinzel esté realmente cargada
+        // Volver a medir cuando Cinzel esté realmente cargada
         document.fonts.load('500 100px Cinzel').then(fit, fit);
         document.fonts.addEventListener('loadingdone', fit);
         if (document.fonts.ready) document.fonts.ready.then(fit);
       }
+      setTimeout(fit, 400);
+      setTimeout(fit, 1500);
       fit();
     })();
   </script>
