@@ -18,6 +18,8 @@
 
   * { box-sizing: border-box; }
 
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
   html, body {
     margin: 0;
     width: 100%;
@@ -100,8 +102,8 @@
       var spans = h1.querySelectorAll('span');
 
       function fit() {
-        var available = document.documentElement.clientWidth * 0.92;
-        var test = 90; // tamaño de prueba en px
+        var available = document.documentElement.clientWidth * 0.90;
+        var test = 100; // tamaño de prueba en px
         h1.style.fontSize = test + 'px';
 
         var widest = 0;
@@ -118,7 +120,13 @@
 
       window.addEventListener('resize', fit);
       window.addEventListener('orientationchange', fit);
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+      window.addEventListener('load', fit);
+      if (document.fonts) {
+        // Medir de nuevo en cuanto Cinzel esté realmente cargada
+        document.fonts.load('500 100px Cinzel').then(fit, fit);
+        document.fonts.addEventListener('loadingdone', fit);
+        if (document.fonts.ready) document.fonts.ready.then(fit);
+      }
       fit();
     })();
   </script>
